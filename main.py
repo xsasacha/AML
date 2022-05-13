@@ -45,6 +45,7 @@ def sigmoid(z):
     return 1/(1+np.exp(-z))
 
 
+# What is c?
 def gradient(beta, x, y):
     sum = np.log(1+np.exp(-y*x[0].dot(beta)))
     loss = (np.transpose(beta).dot(beta))/(2*c)+1/len(x)*np.sum(sum)
@@ -64,12 +65,49 @@ def zero_one_loss(y_predict, y_truth):
     return len(y_predict)/len(y_truth)
 
 
-def gradient_descent():
+def gradient_descent(beta, X, y, tau0, mu=None, gamma=None, m=10, test=False):
+    for t in range(m):
+        beta -= tau0 * gradient(beta, X, y)
+    return beta
 
+def stochastic_gradient_descent(beta, X, y, tau0, gamma, mu=None, m=150, test=False):
+    for t in range(m):
+        index = np.random.choice(y.shape[0], size=1, replace=False)
+        tau = tau0 / (1 + gamma * t)
+        beta -= tau * gradient(beta, X[index], y[index])
+    return beta
 
+def sg_minibatch(beta, X, y, tau0, gamma, mu=None, m=150, batch_size=20, test=False):
+    for t in range(m):
+        B = np.random.choice(y.shape[0], size=batch_size, replace=False)
+        tau = tau0 / (1 + gamma * t)
+        beta -= tau * gradient(beta, X[B], y[B]) #edited
+    return beta
 
+def sg_momentum(beta, X, y, tau0, mu, gamma, m=150, test=False):
+    g = np.zeros(beta.shape)
+    for t in range(m):
+        index = np.random.choice(y.shape[0], size=1, replace=False)
+        tau = tau0 / (1 + gamma * t)
+        g = mu * g + (1 - mu) * gradient(beta, X[index], y[index])
+        beta -= tau * g
+    return beta
 
-'''plt.figure(figsize=(20,4))
+def ADAM(beta, X, y, tau0 = 1e-4, mu = None, gamma = None, m=150, mu1 = 0.9, mu2 = 0.999, eps = 1e-8, test=False):
+    g = np.zeros(beta.shape)
+    q = np.zeros(beta.shape)
+    for t in range(m):
+        index = np.random.choice(y.shape[0], size=1, replace=False)
+        l = gradient(beta, X[index], y[index])
+        g = mu1 * g + (1 - mu1) * l
+        q = mu2 * q + (1 - mu2) * l**2
+        g_til = g / (1 - mu1 ** (t+1))
+        q_til = q / (1 - mu2 ** (t+1))
+        beta -= tau0 / (q_til**0.5 + eps ) * g_til
+    return beta
+
+'''
+plt.figure(figsize=(20,4))
 
 for index, (image, label) in enumerate(zip(new_data[0:10], digits.target[0:10])):
  plt.subplot(1, 10, index + 1)
@@ -77,7 +115,8 @@ for index, (image, label) in enumerate(zip(new_data[0:10], digits.target[0:10]))
  plt.title('Training: %i\n' % label, fontsize = 20)
 
 
-plt.show()'''
+plt.show()
+'''
 
 
 
