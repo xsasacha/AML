@@ -40,6 +40,7 @@ def sk_class(new_data, new_target):
         score = cross_val_score(logisticRegr,new_data, new_target,cv=2)
         print("%0.2f accuracy with a standard deviation of %0.2f" % (score.mean(), score.std()))
 
+Lambda = 1
 
 def sigmoid(z):
     return 1/(1+np.exp(-z))
@@ -106,6 +107,46 @@ def ADAM(beta, X, y, tau0 = 1e-4, mu = None, gamma = None, m=150, mu1 = 0.9, mu2
         beta -= tau0 / (q_til**0.5 + eps ) * g_til
     return beta
 
+def stochastic_average_gradient(beta, X, y, tau0, gamma, mu=None, m=150, test=False):
+
+    gi_stored = (-y * X) * sigmoid(-y * np.dot(X, beta))
+    g = np.mean(gi_stored, axis= 0, keepdims= True)
+
+    for t in range(m):
+        tau = tau0 / (1 + gamma * t)
+        i = np.random.choice(y.shape[0], size=1, replace=False)
+        gi = -y[i] * X[i] * sigmoid(-y[i] * np.dot(X[i], beta))
+        g += (gi - gi_stored[i,:]) / y.shape[0]
+        gi_stored[i,:] = gi
+        beta = beta * (1 - tau / Lambda) - tau * g.T
+    return beta
+
+def dual_coordinate_ascent(beta, X, y, tau0=None, mu=None, gamma=None, m=150, eps = 0.01, test=False):
+    N = y.shape[0]
+    alpha = np.random.uniform(0, 1, y.shape)
+    beta = Lambda / N * np.dot(X.T, y * alpha)
+    for t in range(m):
+        i = np.random.choice(y.shape[0], size=1, replace=False)
+        f1 = y[i] * np.dot(X[i], beta) + np.log(alpha[i] / (1 - alpha[i]))
+        f2 = Lambda / N * np.dot(X[i], X[i].T) + 1 / ((alpha[i])*(1 - alpha[i]))
+        alpha_old = alpha[i]
+        alpha[i] = np.clip(alpha[i] - f1 / f2, eps, 1 - eps)
+        beta += (alpha[i] - alpha_old) * y[i] * X[i].T * Lambda / N
+    return beta
+
+def Newton_Raphson(beta, X, y, tau0=None, mu=None, gamma=None, m=10, test=False):
+    for t in range(m):
+        z = np.dot(X, beta)
+        ytil = y / sigmoid(y * z)
+        W = np.diag(((sigmoid(z) * sigmoid(-z)) * Lambda / X.shape[0]).reshape(-1,))
+        beta = (np.linalg.inv(np.eye(X.shape[1]) + np.dot(X.T,W).dot(X))).dot(X.T).dot(W).dot(z + ytil)
+    return beta
+
+def main():
+    return 0
+
+if __name__ == "__main__":
+    main()
 '''
 plt.figure(figsize=(20,4))
 
